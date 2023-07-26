@@ -8,6 +8,7 @@ var longitude; // Longitude of the searched city
 function getLatandLong(city) {
     // API call to geocode maps service to get latitude and longitude of the city
     const apiUrl = `https://geocode.maps.co/search?q=${city}`;
+
     fetch(apiUrl)
         .then(response => response.json())
         .then(data => {
@@ -38,19 +39,26 @@ function getLatandLong(city) {
 
             // Fetch weather data using the retrieved latitude and longitude
             fetchWeather(latitude, longitude);
+        }).catch(error => {
+            console.log("Error Fetching geolocation API");
+            var locationEl = document.getElementById('location');
+            locationEl.textContent = "Error Fetching Location Try Again";
         });
+
+
+
 }
 
 // Function to fetch weather data using latitude and longitude
 function fetchWeather(latitude, longitude) {
     // API call to OpenWeatherMap service to get weather data
     const apiUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&appid=${apiKey}`;
+
     fetch(apiUrl)
         .then(response => response.json())
         .then(data => {
             // Update current weather elements with the retrieved weather data
-            var date = dayjs.unix(data.list[0].dt).format('M/D/YYYY');
-            var locationShort = data.city.name + ", " + data.city.country;
+            // var date = dayjs.unix(data.list[0].dt).format('M/D/YYYY');
             var imgCurrentEl = $('#img-current');
             var tempCurrentEL = $('#temp-current');
             var weatherCurrentEl = $('#weather-current');
@@ -61,25 +69,46 @@ function fetchWeather(latitude, longitude) {
             weatherCurrentEl.text(data.list[0].weather[0].description);
             windCurrentEl.text(Math.round(data.list[0].wind.speed) + " mph " + windDirection(data.list[0].wind.deg));
             humidCurrentEl.text(data.list[0].main.humidity + "% Humidity");
+            console.log(data);
 
             // Loop through forecast data and update elements for the upcoming days
             var j = 0;
-            for (var i = 7; i < 40; i = i + 8) {
+            for (var i = 0; i < 40; i = i + 8) {
+                console.log("i = " + i);
                 var dateEl = $('#date-' + j);
                 var tempEl = $('#temp-' + j);
                 var imgEl = $('#img-' + j);
                 var weatherEl = $('#weather-' + j);
                 var windEl = $('#wind-' + j);
                 var humidEl = $('#humid-' + j);
-                dateEl.text(dayjs.unix(data.list[i].dt).format('M/D/YYYY'));
-                tempEl.text(KtoF(data.list[i].main.temp) + "\u00B0 F");
+
+                // Loops through the next 8 elements to get the high for that day
+                var tempHigh = 0;
+                for (var k = i; k < i + 8 && k < data.list.length; k++) {
+                    // console.log("Looping k = " + k);
+                    if (data.list[k].main.temp_max > tempHigh && k < 40) {
+                        tempHigh = data.list[k].main.temp_max;
+                        console.log();
+                        console.log("At i = " + k + " " + dayjs.unix(data.list[i].dt).format('YYYY-MM-DD') + " New High: " + KtoF(tempHigh) + " / " + tempHigh);
+                    }
+                }
+
+                dateEl.text(dayjs.unix(data.list[i].dt).format('ddd, M/D/YYYY'));
+                tempEl.text(KtoF(tempHigh) + "\u00B0 F");
                 imgEl.text(weatherIcon(data.list[i].weather[0].id));
                 weatherEl.text(data.list[i].weather[0].description);
                 windEl.text(Math.round(data.list[i].wind.speed) + " mph " + windDirection(data.list[i].wind.deg));
                 humidEl.text(data.list[i].main.humidity + "% Humidity");
                 j++;
             }
+        }).catch(error => {
+            console.log("Error Fetching OpenWeather API");
+            var locationEl = document.getElementById('location');
+            locationEl.textContent = "Error Fetching Weather, Try Again";
         });
+
+
+
 }
 
 // Function to convert Kelvin to Fahrenheit
@@ -123,7 +152,7 @@ function weatherIcon(ID) {
 function getCityName(displayName) {
     var nameArray = displayName.split(', ');
     cityName = nameArray[0];
-    return cityName; 
+    return cityName;
 }
 
 // Event listener for search bar keyup (Enter key)
@@ -179,7 +208,7 @@ function loadLocalStorage() {
         searches = JSON.parse(savedSearches);
         getLatandLong(searches[searches.length - 1].displayName);
     }
-    else{
+    else {
         getLatandLong("New York City");
     }
 }

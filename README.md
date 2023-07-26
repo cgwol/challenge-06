@@ -18,4 +18,6 @@
     WHEN I click on a city in the search history
     THEN I am again presented with current and future conditions for that city
 
+https://cgwol.github.io/challenge-06-Weather-Dashboard/
+
 ![Alt screenshot](assets/img/ss.png)
